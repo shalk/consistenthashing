@@ -10,12 +10,12 @@ import java.util.List;
  * @author shalk
  * @since 19-8-23
  */
-public class ModHashingTest {
+public class HashingTest {
 
     @Test
     public void test() {
         // given
-        List<Endpoint> nodes = new ArrayList<Endpoint>();
+        List<Endpoint> nodes = new ArrayList<>();
         int N = 10;
         for (int i = 0; i < N; i++) {
             Endpoint node = new Endpoint("10.0.0." + i, "1000" + i);
@@ -37,7 +37,7 @@ public class ModHashingTest {
     @Test
     public void test1() {
         //given
-        List<Endpoint> nodes = new ArrayList<Endpoint>();
+        List<Endpoint> nodes = new ArrayList<>();
         int N = 10;
         for (int i = 0; i < N; i++) {
             Endpoint node = new Endpoint("10.0.0." + i, "1000" + i);
