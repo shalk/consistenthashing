@@ -1,5 +1,7 @@
 package com.xshalk.algs;
 
+import org.apache.commons.codec.digest.DigestUtils;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -13,20 +15,34 @@ public class ConsistentHashing implements Hashing {
 
     private TreeMap<Long, Endpoint> ring = new TreeMap<>();
     private List<Endpoint> nodes;
+    private int virtualCount;
 
     public ConsistentHashing(List<Endpoint> nodes) {
         this.nodes = nodes;
+        this.virtualCount = 200;
+        initRing();
+    }
+
+    public ConsistentHashing(List<Endpoint> nodes, int virtualCount) {
+        this.nodes = nodes;
+        this.virtualCount = virtualCount;
         initRing();
     }
 
     private void initRing() {
         // node1 => 2^32-1
         for (Endpoint node : nodes) {
-            //TODO3 virtual node
-            long key = hash(node);
-            System.out.print("key = " + key);
-            System.out.println(",node = " + node);
-            ring.put(key, node);
+            for (int i = 0; i < virtualCount; i++) {
+                String uniq_name = node.getIp() + ":" + node.getPort() + "_" + i;
+                byte[] md5bytes = DigestUtils.md5(uniq_name);
+                for (int j = 0; j < 4; j++) {
+                    long key = (long) ((md5bytes[3 + j * 4] & 0xFF) << 24) |
+                            (long) ((md5bytes[2 + j * 4] & 0xFF) << 16) |
+                            (long) ((md5bytes[1 + j * 4] & 0xFF) << 8) |
+                            (long) ((md5bytes[j * 4] & 0xFF));
+                    ring.put(key, node);
+                }
+            }
         }
     }
 
@@ -34,10 +50,20 @@ public class ConsistentHashing implements Hashing {
         ring.clear();
     }
 
-    private long hash(Endpoint node) {
-        //TODO1
-        return node.hashCode() & 0x7fff_ffff;
+    /**
+     * 给虚拟节点做hash
+     *
+     * @param uniq_name
+     * @return
+     */
+    private long hash(String uniq_name) {
+        byte[] md5bytes = DigestUtils.md5(uniq_name);
+        return (long) ((md5bytes[3] & 0xFF) << 24) |
+                (long) ((md5bytes[2] & 0xFF) << 16) |
+                (long) ((md5bytes[1] & 0xFF) << 8) |
+                (long) ((md5bytes[0] & 0xFF));
     }
+
 
     @Override
     public List<Endpoint> getNodes() {
@@ -53,19 +79,32 @@ public class ConsistentHashing implements Hashing {
 
     @Override
     public void removeNode(Endpoint node) {
-        nodes.add(node);
+        nodes.remove(node);
         clearRing();
         initRing();
     }
 
+    /**
+     * 选取时的key的hash
+     *
+     * @param key
+     * @return
+     */
     private long hash1(String key) {
-        //TODO2
-        return key.hashCode() & 0x7fff_ffff;
+        return hash(key);
     }
 
+
+    //    private long murmur3(String key) {
+//
+//    }
     @Override
     public Endpoint getEndPoint(String key) {
         Map.Entry<Long, Endpoint> entry = ring.ceilingEntry(hash1(key));
         return entry != null ? entry.getValue() : ring.firstEntry().getValue();
+    }
+
+    public static void main(String[] args) {
+        System.out.println(DigestUtils.md5("ads").length);
     }
 }
